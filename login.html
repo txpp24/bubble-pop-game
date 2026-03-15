@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 气泡消消乐</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .background-bubbles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-bubble {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.35;
+            animation: floatBubble linear infinite;
+            box-shadow: inset -8px -8px 20px rgba(0, 0, 0, 0.25),
+                inset 8px 8px 20px rgba(255, 255, 255, 0.4),
+                0 4px 15px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(1px);
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4) 0%, transparent 50%);
+        }
+
+        .bg-bubble::before {
+            content: '';
+            position: absolute;
+            top: 6%;
+            left: 10%;
+            width: 28%;
+            height: 20%;
+            background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
+            border-radius: 50%;
+            filter: blur(0.5px);
+        }
+
+        .bg-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: 12%;
+            right: 12%;
+            width: 15%;
+            height: 15%;
+            background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 70%);
+            border-radius: 50%;
+            filter: blur(0.5px);
+        }
+
+        @keyframes floatBubble {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.35;
+            }
+
+            90% {
+                opacity: 0.35;
+            }
+
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .auth-box {
+            background: rgba(255, 250, 252, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .auth-box {
+                padding: 30px 20px;
+                max-width: 90%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .auth-box {
+                padding: 25px 15px;
+                max-width: 95%;
+            }
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-header h1 {
+            font-size: 28px;
+            color: #ff6b9d;
+            margin: 0 0 10px 0;
+        }
+
+        .auth-header p {
+            color: #666;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            padding: 5px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #ff6b9d;
+            transition: all 0.3s ease;
+        }
+
+        .auth-tab.active {
+            background: linear-gradient(135deg, rgba(255, 250, 252, 0.95) 0%, rgba(255, 240, 240, 0.95) 100%);
+            color: #ff6b9d;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid rgba(255, 107, 157, 0.3);
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #ff6b9d;
+        }
+
+        .form-group input::placeholder {
+            color: #aaa;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #ff6b9d 0%, #ff4081 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 157, 0.4);
+        }
+
+        .auth-btn:active {
+            transform: translateY(0);
+        }
+
+        .auth-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .auth-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .auth-message.error {
+            background: #fee;
+            color: #c33;
+            display: block;
+        }
+
+        .auth-message.success {
+            background: #efe;
+            color: #3c3;
+            display: block;
+        }
+
+        .back-btn {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #ff6b9d;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .back-btn:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .guest-btn {
+            background: linear-gradient(135deg, rgba(255, 250, 252, 0.9) 0%, rgba(255, 240, 240, 0.9) 100%);
+            color: #ff6b9d;
+            border: 2px solid rgba(255, 107, 157, 0.5);
+            margin-top: 10px;
+        }
+
+        .guest-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 250, 252, 0.95) 0%, rgba(255, 240, 240, 0.95) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 157, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-bubbles" id="backgroundBubbles"></div>
+
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="auth-header">
+                <h1>🫧 气泡消消乐</h1>
+                <p>登录后保存成绩到在线排行榜</p>
+            </div>
+
+            <div class="auth-message" id="authMessage"></div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">登录</button>
+                <button class="auth-tab" data-tab="register">注册</button>
+            </div>
+
+            <form class="auth-form active" id="loginForm">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="loginUsername" placeholder="请输入用户名" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" placeholder="请输入密码" required>
+                </div>
+                <button type="submit" class="auth-btn">登录</button>
+            </form>
+
+            <form class="auth-form" id="registerForm">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="registerUsername" placeholder="3-20个字符" required minlength="3"
+                        maxlength="20">
+                    <div class="form-hint">用户名长度必须在3-20个字符之间</div>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="registerPassword" placeholder="至少6个字符" required minlength="6">
+                    <div class="form-hint">密码长度至少6个字符</div>
+                </div>
+                <div class="form-group">
+                    <label>确认密码</label>
+                    <input type="password" id="registerConfirmPassword" placeholder="再次输入密码" required>
+                </div>
+                <button type="submit" class="auth-btn">注册</button>
+            </form>
+
+            <button class="auth-btn guest-btn" id="guestBtn">游客模式（不保存分数）</button>
+
+            <a href="start.html" class="back-btn">← 返回首页</a>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+    <script>
+        const tabs = document.querySelectorAll('.auth-tab');
+        const forms = document.querySelectorAll('.auth-form');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const authMessage = document.getElementById('authMessage');
+        const guestBtn = document.getElementById('guestBtn');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                forms.forEach(f => f.classList.remove('active'));
+
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + 'Form').classList.add('active');
+                hideMessage();
+            });
+        });
+
+        function showMessage(message, type = 'error') {
+            authMessage.textContent = message;
+            authMessage.className = 'auth-message ' + type;
+        }
+
+        function hideMessage() {
+            authMessage.className = 'auth-message';
+        }
+
+        function setLoading(btn, loading) {
+            if (loading) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading"></span>处理中...';
+            } else {
+                btn.disabled = false;
+                btn.textContent = btn.dataset.originalText || btn.textContent;
+            }
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = loginForm.querySelector('button[type="submit"]');
+            btn.dataset.originalText = btn.textContent;
+
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            setLoading(btn, true);
+            hideMessage();
+
+            const result = await login(username, password);
+            setLoading(btn, false);
+
+            if (result.success) {
+                gameState.user = result.user;
+                gameState.token = result.token;
+                localStorage.setItem('user', JSON.stringify(result.user));
+                localStorage.setItem('token', result.token);
+                showMessage('登录成功！', 'success');
+                setTimeout(() => {
+                    window.location.href = 'start.html';
+                }, 1000);
+            } else {
+                showMessage(result.error || '登录失败，请重试');
+            }
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = registerForm.querySelector('button[type="submit"]');
+            btn.dataset.originalText = btn.textContent;
+
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+
+            if (password !== confirmPassword) {
+                showMessage('两次输入的密码不一致');
+                return;
+            }
+
+            setLoading(btn, true);
+            hideMessage();
+
+            const result = await register(username, password);
+            setLoading(btn, false);
+
+            if (result.success) {
+                showMessage('注册成功！请登录', 'success');
+                setTimeout(() => {
+                    tabs[0].click();
+                    document.getElementById('loginUsername').value = username;
+                    document.getElementById('loginPassword').value = '';
+                }, 1500);
+            } else {
+                showMessage(result.error || '注册失败，请重试');
+            }
+        });
+
+        guestBtn.addEventListener('click', () => {
+            gameState.user = null;
+            gameState.token = null;
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = 'start.html';
+        });
+
+        function createBackgroundBubbles() {
+            const container = document.getElementById('backgroundBubbles');
+            if (!container) return;
+
+            const colors = ['#E74C3C', '#3498DB', '#2ECC71', '#9B59B6', '#F39C12', '#1ABC9C', '#E91E63', '#00BCD4'];
+            const bubbleCount = 50;
+            const particleCount = 40;
+            const animations = [
+                'floatBubble',
+                'floatBubbleDown',
+                'floatBubbleLeft',
+                'floatBubbleRight',
+                'floatBubbleDiagonal1',
+                'floatBubbleDiagonal2',
+                'floatBubbleDiagonal3',
+                'floatBubbleDiagonal4'
+            ];
+
+            const usedPositions = [];
+
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bg-bubble';
+
+                let left, top;
+                let attempts = 0;
+                do {
+                    left = Math.random() * 90 + 5;
+                    top = Math.random() * 90 + 5;
+                    attempts++;
+                } while (attempts < 10 && usedPositions.some(pos =>
+                    Math.abs(pos.left - left) < 20 && Math.abs(pos.top - top) < 20
+                ));
+
+                usedPositions.push({ left, top });
+
+                const size = Math.random() * 50 + 25;
+                const duration = Math.random() * 10 + 15;
+                const delay = Math.random() * 10;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const animation = animations[Math.floor(Math.random() * animations.length)];
+
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = left + '%';
+                bubble.style.top = top + '%';
+                bubble.style.animationDuration = duration + 's';
+                bubble.style.animationDelay = delay + 's';
+                bubble.style.background = color;
+                bubble.style.animationName = animation;
+
+                container.appendChild(bubble);
+            }
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                const left = Math.random() * 100;
+                const top = Math.random() * 100;
+                const duration = Math.random() * 8 + 8;
+                const delay = Math.random() * 10;
+
+                particle.style.left = left + '%';
+                particle.style.top = top + '%';
+                particle.style.animationDuration = duration + 's';
+                particle.style.animationDelay = delay + 's';
+
+                container.appendChild(particle);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            createBackgroundBubbles();
+
+            const savedUser = localStorage.getItem('user');
+            const savedToken = localStorage.getItem('token');
+
+            if (savedUser && savedToken) {
+                gameState.user = JSON.parse(savedUser);
+                gameState.token = savedToken;
+                window.location.href = 'start.html';
+            }
+        });
+    </script>
+</body>
+
+</html>

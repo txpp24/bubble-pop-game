@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>气泡消消乐</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="background-bubbles" id="backgroundBubbles"></div>
+
+    <div id="app">
+        <div class="user-bar">
+            <div class="user-info" id="userInfo">
+                <span class="user-icon">👤</span>
+                <span class="user-name">未登录</span>
+            </div>
+            <button class="user-action-btn" id="userActionBtn" onclick="handleUserAction()">
+                登录
+            </button>
+        </div>
+
+        <div class="page active">
+            <div class="title-container">
+                <span class="title-icon">🎈</span>
+                <h1 class="title">气泡消消乐</h1>
+                <span class="title-icon">🎈</span>
+            </div>
+
+            <div class="intro-container">
+                <p class="intro-text">
+                    🎈 点击消除彩色气泡，体验消除的快感！<br>
+                    🎯 连击、道具、关卡，挑战你的极限！
+                </p>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="startGame('timed')">
+                    <span class="btn-icon">🏆</span>
+                    关卡挑战
+                </button>
+                <button class="btn btn-secondary" onclick="startGame('endless')">
+                    <span class="btn-icon">♾️</span>
+                    无限模式
+                </button>
+                <button class="btn btn-tertiary" onclick="showLeaderboard()">
+                    <span class="btn-icon">🏆</span>
+                    排行榜
+                </button>
+            </div>
+
+            <button class="btn btn-rules" onclick="toggleRules()">
+                <span class="btn-icon">📖</span>
+                游戏规则
+            </button>
+        </div>
+    </div>
+
+    <div id="rules-overlay" class="rules-overlay">
+        <div class="rules-content">
+            <h2 class="rules-header">📖 游戏规则</h2>
+            <div class="rules-section">
+                <h4 class="section-title">🎮 基础玩法</h4>
+                <ul class="rules-list">
+                    <li>👆 点击气泡即可消除</li>
+                    <li>🎯 点击同色相邻气泡可一次消除多个</li>
+                    <li>⭐ 消除越多分数越高</li>
+                    <li>🔥 连续消除可获得连击加成</li>
+                    <li>💣 炸弹气泡可消除周围所有气泡</li>
+                </ul>
+            </div>
+            <div class="rules-section">
+                <h4 class="section-title">✨ 道具系统</h4>
+                <ul class="rules-list">
+                    <li>⏰ 增加时间道具：+10秒</li>
+                    <li>⚡ 减少时间道具：-5秒</li>
+                    <li>✨ 双倍分数道具：10秒内双倍得分</li>
+                    <li>❄️ 冻结气泡道具：3秒内气泡停止移动</li>
+                    <li>💥 全屏炸弹道具：消除所有气泡（仅无限模式）</li>
+                </ul>
+            </div>
+            <div class="rules-section">
+                <h4 class="section-title">🎯 游戏模式</h4>
+                <ul class="rules-list">
+                    <li>🏆 关卡模式：无限关卡，难度逐渐递增</li>
+                    <li>♾️ 无限模式：无时间限制，自由挑战</li>
+                </ul>
+            </div>
+            <button class="btn btn-close" onclick="toggleRules()">
+                <span class="btn-icon">✖️</span>
+                关闭
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function showLeaderboard() {
+            window.location.href = 'leaderboard.html';
+        }
+
+        function toggleRules() {
+            const overlay = document.getElementById('rules-overlay');
+            overlay.classList.toggle('active');
+        }
+
+        function handleUserAction() {
+            if (gameState.user) {
+                logout();
+            } else {
+                window.location.href = 'login.html';
+            }
+        }
+
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                gameState.user = null;
+                gameState.token = null;
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                updateUserBar();
+            }
+        }
+
+        function updateUserBar() {
+            const userInfo = document.getElementById('userInfo');
+            const userActionBtn = document.getElementById('userActionBtn');
+
+            if (gameState.user) {
+                userInfo.innerHTML = `
+                    <span class="user-icon">👤</span>
+                    <span class="user-name">${escapeHtml(gameState.user.username)}</span>
+                `;
+                userActionBtn.textContent = '退出';
+            } else {
+                userInfo.innerHTML = `
+                    <span class="user-icon">👤</span>
+                    <span class="user-name">未登录</span>
+                `;
+                userActionBtn.textContent = '登录';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function createBackgroundBubbles() {
+            const container = document.getElementById('backgroundBubbles');
+            if (!container) return;
+
+            const colors = ['#E74C3C', '#3498DB', '#2ECC71', '#9B59B6', '#F39C12', '#1ABC9C', '#E91E63', '#00BCD4'];
+            const bubbleCount = 50;
+            const particleCount = 40;
+            const animations = [
+                'floatBubble',
+                'floatBubbleDown',
+                'floatBubbleLeft',
+                'floatBubbleRight',
+                'floatBubbleDiagonal1',
+                'floatBubbleDiagonal2',
+                'floatBubbleDiagonal3',
+                'floatBubbleDiagonal4'
+            ];
+
+            const usedPositions = [];
+
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bg-bubble';
+
+                let left, top;
+                let attempts = 0;
+                do {
+                    left = Math.random() * 90 + 5;
+                    top = Math.random() * 90 + 5;
+                    attempts++;
+                } while (attempts < 10 && usedPositions.some(pos =>
+                    Math.abs(pos.left - left) < 20 && Math.abs(pos.top - top) < 20
+                ));
+
+                usedPositions.push({ left, top });
+
+                const size = Math.random() * 50 + 25;
+                const duration = Math.random() * 10 + 15;
+                const delay = Math.random() * 10;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const animation = animations[Math.floor(Math.random() * animations.length)];
+
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = left + '%';
+                bubble.style.top = top + '%';
+                bubble.style.animationDuration = duration + 's';
+                bubble.style.animationDelay = delay + 's';
+                bubble.style.background = color;
+                bubble.style.animationName = animation;
+
+                container.appendChild(bubble);
+            }
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                const left = Math.random() * 100;
+                const top = Math.random() * 100;
+                const duration = Math.random() * 8 + 8;
+                const delay = Math.random() * 10;
+
+                particle.style.left = left + '%';
+                particle.style.top = top + '%';
+                particle.style.animationDuration = duration + 's';
+                particle.style.animationDelay = delay + 's';
+
+                container.appendChild(particle);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            createBackgroundBubbles();
+
+            const savedUser = localStorage.getItem('user');
+            const savedToken = localStorage.getItem('token');
+
+            if (savedUser && savedToken) {
+                try {
+                    gameState.user = JSON.parse(savedUser);
+                    gameState.token = savedToken;
+                } catch (e) {
+                    console.error('Failed to parse saved user data');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                }
+            }
+
+            updateUserBar();
+        });
+    </script>
+    <script src="game.js"></script>
+</body>
+
+</html>

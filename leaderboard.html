@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>气泡消消乐 - 排行榜</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .my-rank-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .my-rank-card.active {
+            display: block;
+        }
+
+        .my-rank-header {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .my-rank-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .my-rank-number {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .my-rank-details {
+            text-align: right;
+        }
+
+        .my-rank-score {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .my-rank-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .login-hint {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .login-hint-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .login-hint-text {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .login-hint-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .login-hint-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .leaderboard-item.my-rank {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .leaderboard-item.my-rank .player-name,
+        .leaderboard-item.my-rank .score-value,
+        .leaderboard-item.my-rank .level-value {
+            color: white;
+        }
+
+        .leaderboard-item.my-rank .player-date {
+            color: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-bubbles" id="backgroundBubbles"></div>
+
+    <div id="app">
+        <div class="user-bar">
+            <div class="user-info" id="userInfo">
+                <span class="user-icon">👤</span>
+                <span class="user-name">未登录</span>
+            </div>
+            <button class="user-action-btn" id="userActionBtn" onclick="handleUserAction()">
+                登录
+            </button>
+        </div>
+
+        <div class="page active">
+            <div class="title-container">
+                <span class="title-icon">🏆</span>
+                <h1 class="title">排行榜</h1>
+                <span class="title-icon">🏆</span>
+            </div>
+
+            <div class="leaderboard-tabs">
+                <button class="tab-btn active" data-mode="timed" onclick="switchTab('timed')">
+                    <span class="tab-icon">🏆</span>
+                    关卡挑战
+                </button>
+                <button class="tab-btn" data-mode="endless" onclick="switchTab('endless')">
+                    <span class="tab-icon">♾️</span>
+                    无限模式
+                </button>
+            </div>
+
+            <div id="loginHint" class="login-hint">
+                <div class="login-hint-icon">🔐</div>
+                <p class="login-hint-text">登录后查看在线排行榜</p>
+                <a href="login.html" class="login-hint-btn">立即登录</a>
+            </div>
+
+            <div id="leaderboardContent" style="display: none;">
+                <div class="my-rank-card" id="myRankCard">
+                    <div class="my-rank-header">👤 我的排名</div>
+                    <div class="my-rank-info">
+                        <div class="my-rank-number" id="myRankNumber">#-</div>
+                        <div class="my-rank-details">
+                            <div class="my-rank-score" id="myRankScore">0</div>
+                            <div class="my-rank-label">消除</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="leaderboard-container">
+                    <div id="leaderboard-list" class="leaderboard-list">
+                        <div class="loading-spinner">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="backToHome()">
+                    <span class="btn-icon">🏠</span>
+                    返回首页
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'timed';
+        let leaderboardData = [];
+        let myRankData = null;
+
+        function switchTab(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.mode === mode) {
+                    btn.classList.add('active');
+                }
+            });
+            loadLeaderboard();
+        }
+
+        async function loadLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            const myRankCard = document.getElementById('myRankCard');
+
+            list.innerHTML = `
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                </div>
+            `;
+
+            const result = await getLeaderboard(currentMode);
+
+            if (result.success && result.leaderboard) {
+                leaderboardData = result.leaderboard;
+                renderLeaderboard();
+            } else {
+                list.innerHTML = `
+                    <div class="empty-leaderboard">
+                        <div class="empty-icon">❌</div>
+                        <p class="empty-text">加载失败</p>
+                        <p class="empty-hint">${result.error || '请稍后重试'}</p>
+                    </div>
+                `;
+            }
+
+            await loadMyRank();
+        }
+
+        async function loadMyRank() {
+            const myRankCard = document.getElementById('myRankCard');
+            const myRankNumber = document.getElementById('myRankNumber');
+            const myRankScore = document.getElementById('myRankScore');
+
+            const result = await getMyRank(currentMode);
+
+            if (result.success && result.myRank) {
+                myRankData = result.myRank;
+                myRankCard.classList.add('active');
+                myRankNumber.textContent = '#' + myRankData.rank;
+                myRankScore.textContent = myRankData.score;
+            } else {
+                myRankCard.classList.remove('active');
+            }
+        }
+
+        function renderLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+
+            if (!leaderboardData || leaderboardData.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-leaderboard">
+                        <div class="empty-icon">📭</div>
+                        <p class="empty-text">暂无记录</p>
+                        <p class="empty-hint">快去挑战吧！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = leaderboardData.map((entry, index) => {
+                const isMyRank = myRankData && entry.id === myRankData.id;
+                return `
+                    <div class="leaderboard-item ${index < 3 ? 'top-' + (index + 1) : ''} ${isMyRank ? 'my-rank' : ''}">
+                        <div class="rank">
+                            ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '#' + entry.rank}
+                        </div>
+                        <div class="player-info">
+                            <div class="player-name">${escapeHtml(entry.username)}</div>
+                            <div class="player-date">${formatDate(entry.created_at)}</div>
+                        </div>
+                        <div class="player-score">
+                            <div class="score-value">${entry.score}</div>
+                            <div class="score-label">消除</div>
+                        </div>
+                        ${currentMode === 'timed' ? `
+                            <div class="player-level">
+                                <div class="level-value">${entry.level}</div>
+                                <div class="level-label">关卡</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        function backToHome() {
+            window.location.href = 'start.html';
+        }
+
+        function handleUserAction() {
+            if (gameState.user) {
+                logout();
+            } else {
+                window.location.href = 'login.html';
+            }
+        }
+
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                gameState.user = null;
+                gameState.token = null;
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                updateUserBar();
+                updateLoginHint();
+            }
+        }
+
+        function updateUserBar() {
+            const userInfo = document.getElementById('userInfo');
+            const userActionBtn = document.getElementById('userActionBtn');
+
+            if (gameState.user) {
+                userInfo.innerHTML = `
+                    <span class="user-icon">👤</span>
+                    <span class="user-name">${escapeHtml(gameState.user.username)}</span>
+                `;
+                userActionBtn.textContent = '退出';
+            } else {
+                userInfo.innerHTML = `
+                    <span class="user-icon">👤</span>
+                    <span class="user-name">未登录</span>
+                `;
+                userActionBtn.textContent = '登录';
+            }
+        }
+
+        function updateLoginHint() {
+            const loginHint = document.getElementById('loginHint');
+            const leaderboardContent = document.getElementById('leaderboardContent');
+
+            if (gameState.user && gameState.token) {
+                loginHint.style.display = 'none';
+                leaderboardContent.style.display = 'block';
+                loadLeaderboard();
+            } else {
+                loginHint.style.display = 'block';
+                leaderboardContent.style.display = 'none';
+            }
+        }
+
+        function createBackgroundBubbles() {
+            const container = document.getElementById('backgroundBubbles');
+            if (!container) return;
+
+            const colors = ['#E74C3C', '#3498DB', '#2ECC71', '#9B59B6', '#F39C12', '#1ABC9C', '#E91E63', '#00BCD4'];
+            const bubbleCount = 50;
+            const particleCount = 40;
+            const animations = [
+                'floatBubble',
+                'floatBubbleDown',
+                'floatBubbleLeft',
+                'floatBubbleRight',
+                'floatBubbleDiagonal1',
+                'floatBubbleDiagonal2',
+                'floatBubbleDiagonal3',
+                'floatBubbleDiagonal4'
+            ];
+
+            const usedPositions = [];
+
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bg-bubble';
+
+                let left, top;
+                let attempts = 0;
+                do {
+                    left = Math.random() * 90 + 5;
+                    top = Math.random() * 90 + 5;
+                    attempts++;
+                } while (attempts < 10 && usedPositions.some(pos =>
+                    Math.abs(pos.left - left) < 20 && Math.abs(pos.top - top) < 20
+                ));
+
+                usedPositions.push({ left, top });
+
+                const size = Math.random() * 50 + 25;
+                const duration = Math.random() * 10 + 15;
+                const delay = Math.random() * 10;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const animation = animations[Math.floor(Math.random() * animations.length)];
+
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = left + '%';
+                bubble.style.top = top + '%';
+                bubble.style.animationDuration = duration + 's';
+                bubble.style.animationDelay = delay + 's';
+                bubble.style.background = color;
+                bubble.style.animationName = animation;
+
+                container.appendChild(bubble);
+            }
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                const left = Math.random() * 100;
+                const top = Math.random() * 100;
+                const duration = Math.random() * 8 + 8;
+                const delay = Math.random() * 10;
+
+                particle.style.left = left + '%';
+                particle.style.top = top + '%';
+                particle.style.animationDuration = duration + 's';
+                particle.style.animationDelay = delay + 's';
+
+                container.appendChild(particle);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createBackgroundBubbles();
+
+            const savedUser = localStorage.getItem('user');
+            const savedToken = localStorage.getItem('token');
+
+            if (savedUser && savedToken) {
+                try {
+                    gameState.user = JSON.parse(savedUser);
+                    gameState.token = savedToken;
+                } catch (e) {
+                    console.error('Failed to parse saved user data');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                }
+            }
+
+            updateUserBar();
+            updateLoginHint();
+        });
+    </script>
+    <script src="game.js"></script>
+</body>
+
+</html>

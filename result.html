@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>气泡消消乐 - 游戏结束</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="background-bubbles" id="backgroundBubbles"></div>
+
+    <div id="app">
+        <div class="user-bar">
+            <div class="user-info" id="userInfo">
+                <span class="user-icon">👤</span>
+                <span class="user-name">未登录</span>
+            </div>
+        </div>
+
+        <div class="page active">
+            <div class="result-icon-container">
+                <span class="result-icon" id="result-icon">🎉</span>
+            </div>
+
+            <h2 class="result-title" id="result-title">挑战成功！</h2>
+
+            <div class="result-content">
+                <p class="result-label">
+                    <span class="result-icon">🎯</span>
+                    总消除数量
+                </p>
+                <p id="final-score" class="final-score">0</p>
+
+                <p class="result-detail">
+                    <span class="result-icon">🔥</span>
+                    最高连击: <span id="max-combo">x1</span>
+                </p>
+
+                <p class="result-detail" id="level-detail">
+                    <span class="result-icon">🏆</span>
+                    当前关卡: <span id="current-level">1</span>
+                </p>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" id="retry-btn" onclick="retryLevel()">
+                    <span class="btn-icon">🔄</span>
+                    重试
+                </button>
+                <button class="btn btn-secondary" onclick="backToHome()">
+                    <span class="btn-icon">🏠</span>
+                    返回首页
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculateLevelDifficulty(level) {
+            const bubbleCount = 20 + (level - 1) * 5;
+            const time = Math.max(30, 60 - (level - 1) * 5);
+            return { bubbleCount, time };
+        }
+
+        function updateUserBar() {
+            const userInfo = document.getElementById('userInfo');
+            if (!userInfo) return;
+
+            const savedUser = localStorage.getItem('user');
+            const savedToken = localStorage.getItem('token');
+
+            if (savedUser && savedToken) {
+                try {
+                    const user = JSON.parse(savedUser);
+                    userInfo.innerHTML = `
+                        <span class="user-icon">👤</span>
+                        <span class="user-name">${escapeHtml(user.username)}</span>
+                    `;
+                } catch (e) {
+                    console.error('Failed to parse saved user data');
+                }
+            } else {
+                userInfo.innerHTML = `
+                    <span class="user-icon">👤</span>
+                    <span class="user-name">未登录</span>
+                `;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createBackgroundBubbles();
+            updateUserBar();
+
+            const saved = localStorage.getItem('gameState');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                document.getElementById('final-score').textContent = parsed.score;
+                document.getElementById('max-combo').textContent = 'x' + parsed.maxCombo;
+                document.getElementById('current-level').textContent = parsed.level || 1;
+
+                const resultTitle = document.getElementById('result-title');
+                const resultIcon = document.getElementById('result-icon');
+                const retryBtn = document.getElementById('retry-btn');
+
+                if (parsed.isSuccess) {
+                    resultTitle.textContent = '🎉 挑战成功！';
+                    resultIcon.textContent = '🎉';
+                    retryBtn.style.display = 'none';
+                } else {
+                    resultTitle.textContent = '😢 挑战失败！';
+                    resultIcon.textContent = '💔';
+                    retryBtn.style.display = 'inline-flex';
+                }
+            }
+
+            window.backToHome = function () {
+                localStorage.removeItem('gameState');
+                window.location.href = 'start.html';
+            };
+
+            window.retryLevel = function () {
+                const saved = localStorage.getItem('gameState');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    parsed.isPlaying = true;
+                    parsed.isPaused = false;
+                    parsed.score = 0;
+                    parsed.combo = 1;
+                    parsed.maxCombo = 1;
+                    parsed.isSuccess = false;
+
+                    const difficulty = calculateLevelDifficulty(parsed.level);
+                    parsed.timeLeft = difficulty.time;
+                    parsed.bubbleCount = difficulty.bubbleCount;
+
+                    localStorage.setItem('gameState', JSON.stringify(parsed));
+                }
+                window.location.href = 'game.html';
+            };
+        });
+
+        function createBackgroundBubbles() {
+            const container = document.getElementById('backgroundBubbles');
+            if (!container) return;
+
+            const colors = ['#E74C3C', '#3498DB', '#2ECC71', '#9B59B6', '#F39C12', '#1ABC9C', '#E91E63', '#00BCD4'];
+            const bubbleCount = 50;
+            const particleCount = 40;
+            const animations = [
+                'floatBubble',
+                'floatBubbleDown',
+                'floatBubbleLeft',
+                'floatBubbleRight',
+                'floatBubbleDiagonal1',
+                'floatBubbleDiagonal2',
+                'floatBubbleDiagonal3',
+                'floatBubbleDiagonal4'
+            ];
+
+            const usedPositions = [];
+
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bg-bubble';
+
+                let left, top;
+                let attempts = 0;
+                do {
+                    left = Math.random() * 90 + 5;
+                    top = Math.random() * 90 + 5;
+                    attempts++;
+                } while (attempts < 10 && usedPositions.some(pos =>
+                    Math.abs(pos.left - left) < 20 && Math.abs(pos.top - top) < 20
+                ));
+
+                usedPositions.push({ left, top });
+
+                const size = Math.random() * 50 + 25;
+                const duration = Math.random() * 10 + 15;
+                const delay = Math.random() * 10;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const animation = animations[Math.floor(Math.random() * animations.length)];
+
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = left + '%';
+                bubble.style.top = top + '%';
+                bubble.style.animationDuration = duration + 's';
+                bubble.style.animationDelay = delay + 's';
+                bubble.style.background = color;
+                bubble.style.animationName = animation;
+
+                container.appendChild(bubble);
+            }
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+
+                const left = Math.random() * 100;
+                const top = Math.random() * 100;
+                const duration = Math.random() * 8 + 8;
+                const delay = Math.random() * 10;
+
+                particle.style.left = left + '%';
+                particle.style.top = top + '%';
+                particle.style.animationDuration = duration + 's';
+                particle.style.animationDelay = delay + 's';
+
+                container.appendChild(particle);
+            }
+        }
+    </script>
+</body>
+
+</html>

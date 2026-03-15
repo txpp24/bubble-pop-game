@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>气泡消消乐 - 游戏中</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="background-bubbles" id="backgroundBubbles"></div>
+
+    <div id="app">
+        <div class="user-bar">
+            <div class="user-info" id="userInfo">
+                <span class="user-icon">👤</span>
+                <span class="user-name">未登录</span>
+            </div>
+        </div>
+
+        <div class="page active">
+            <div class="game-header">
+                <div class="header-item">
+                    <span class="header-icon">🏆</span>
+                    <span id="level-display">关卡: 1</span>
+                </div>
+                <div class="header-item">
+                    <span class="header-icon">⏱️</span>
+                    <span id="timer-display">时间: 60s</span>
+                </div>
+                <div class="header-item">
+                    <span class="header-icon">🎯</span>
+                    <span id="score-display">消除: 0</span>
+                </div>
+                <div class="header-item combo-item">
+                    <span class="header-icon">🔥</span>
+                    <span id="combo-display">连击: x1</span>
+                </div>
+            </div>
+
+            <div class="game-controls">
+                <button class="btn btn-control" id="sound-toggle" onclick="toggleSound()">
+                    🔊
+                </button>
+                <button class="btn btn-control" onclick="pauseGame()">
+                    ⏸️
+                </button>
+            </div>
+
+            <div id="bubble-container" class="bubble-container"></div>
+
+            <button class="btn btn-small" onclick="backToHome()">
+                <span class="btn-icon">🏠</span>
+                返回首页
+            </button>
+        </div>
+    </div>
+
+    <div id="pause-overlay" class="pause-overlay">
+        <div class="pause-content">
+            <h2 class="pause-title">⏸️ 游戏暂停</h2>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="resumeGame()">
+                    <span class="btn-icon">▶️</span>
+                    继续游戏
+                </button>
+                <button class="btn btn-secondary" onclick="backToHome()">
+                    <span class="btn-icon">🏠</span>
+                    返回首页
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="level-success-overlay" class="level-success-overlay">
+        <div class="level-success-content">
+            <div class="success-icon">🎉</div>
+            <h2 class="success-title">闯关成功！</h2>
+            <div class="success-stats">
+                <p class="success-stat">
+                    <span class="stat-icon">🎯</span>
+                    消除数量: <span id="success-score">0</span>
+                </p>
+                <p class="success-stat">
+                    <span class="stat-icon">🔥</span>
+                    最高连击: <span id="success-combo">x1</span>
+                </p>
+                <p class="success-stat">
+                    <span class="stat-icon">🏆</span>
+                    当前关卡: <span id="current-level-display">1</span>
+                </p>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="nextLevel()">
+                    <span class="btn-icon">➡️</span>
+                    进入下一关
+                </button>
+                <button class="btn btn-secondary" onclick="backToHome()">
+                    <span class="btn-icon">🏠</span>
+                    返回首页
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+
+</html>
